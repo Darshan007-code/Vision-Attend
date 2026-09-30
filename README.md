@@ -1,3 +1,13 @@
+---
+title: VisionAttend AI
+emoji: 🎯
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🎯 VisionAttend AI (Enterprise Edition)
 ### Contactless Biometric Facial Attendance & Liveness Verification System
 
