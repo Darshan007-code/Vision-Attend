@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Management - VisionAttend AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-lg">
+        <div>
+            <h1 class="text-xl font-bold text-white tracking-tight">Faculty Onboarding & Management</h1>
+            <p class="text-slate-400 text-xs mt-1">Register teachers and grant course management privileges.</p>
+        </div>
+
+        <button onclick="document.getElementById('teacher-modal').classList.remove('hidden')" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span>Onboard Faculty Member</span>
+        </button>
+    </div>
+
+    <!-- Teachers Table -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Registered Faculty Directory</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-indigo-400 border border-slate-700 font-mono">{{ teachers|length }} Faculty</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/60 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">#</th>
+                        <th class="py-3 px-4">Faculty Name</th>
+                        <th class="py-3 px-4">Teacher ID</th>
+                        <th class="py-3 px-4">Department</th>
+                        <th class="py-3 px-4">Email</th>
+                        <th class="py-3 px-4">Phone</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80">
+                    {% for t in teachers %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-slate-500">{{ loop.index }}</td>
+                        <td class="py-3.5 px-4 font-bold text-white flex items-center space-x-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs uppercase border border-emerald-500/30">
+                                {{ t.name[0] }}
+                            </div>
+                            <span>{{ t.name }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-indigo-300">{{ t.teacher_code }}</td>
+                        <td class="py-3.5 px-4 text-slate-300">{{ t.department }}</td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ t.email or 'N/A' }}</td>
+                        <td class="py-3.5 px-4 font-mono text-slate-400">{{ t.phone or 'N/A' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="py-10 text-center text-slate-500">No teachers registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="teacher-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+            <h3 class="text-base font-bold text-white">Onboard New Faculty</h3>
+            <button onclick="document.getElementById('teacher-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('teachers_page') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Teacher Code / ID *</label>
+                <input type="text" name="teacher_code" required placeholder="e.g. T103"
+                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Full Legal Name *</label>
+                <input type="text" name="name" required placeholder="e.g. Dr. Alan Turing"
+                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Department *</label>
+                <select name="department" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Electronics & Comm">Electronics & Comm</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                    <input type="email" name="email" placeholder="faculty@visionattend.edu"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone</label>
+                    <input type="text" name="phone" placeholder="+1 555-0199"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="pt-3 flex space-x-3">
+                <button type="button" onclick="document.getElementById('teacher-modal').classList.add('hidden')" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition-all">
+                    Register Faculty
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

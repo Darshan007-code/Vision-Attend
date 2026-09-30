@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Live Attendance Kiosk - VisionAttend AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Session Switcher -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-white/10 p-5 rounded-3xl shadow-xl backdrop-blur-xl">
+        <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 text-lg shadow-inner">
+                <i class="fa-solid fa-camera-viewfinder"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <h1 class="text-lg font-black text-white tracking-tight">Biometric Attendance Kiosk</h1>
+                </div>
+                <p class="text-slate-400 text-xs mt-0.5">Real-Time Face Recognition • Independent Multi-Student Queue</p>
+            </div>
+        </div>
+
+        <!-- Session Controls -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Course:</label>
+                <select id="kiosk-subject" class="bg-transparent text-xs font-bold text-indigo-300 focus:outline-none cursor-pointer">
+                    {% for s in subjects %}
+                        <option value="{{ s.id }}" class="bg-slate-900 text-white" {% if s.id == active_subject_id %}selected{% endif %}>
+                            {{ s.code }} - {{ s.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Session:</label>
+                <select id="kiosk-session" class="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer">
+                    <option value="Regular Class" {% if active_session_type == 'Regular Class' %}selected{% endif %} class="bg-slate-900">Lecture</option>
+                    <option value="Lab Practical" {% if active_session_type == 'Lab Practical' %}selected{% endif %} class="bg-slate-900">Lab Practical</option>
+                    <option value="Tutorial Session" {% if active_session_type == 'Tutorial Session' %}selected{% endif %} class="bg-slate-900">Tutorial</option>
+                </select>
+            </div>
+
+            <button onclick="updateKioskSession()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30">
+                <i class="fa-solid fa-arrows-rotate mr-1"></i> Update
+            </button>
+
+            <!-- Manual Mark Trigger Button -->
+            <button onclick="openManualMarkModal()" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-all flex items-center space-x-1.5">
+                <i class="fa-solid fa-user-pen text-amber-400"></i>
+                <span>Override</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick KPIs Row -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Today Verified</div>
+                <div class="text-2xl font-black text-white mt-1" id="kpi-present">{{ kpis.today_present }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">On-Time Arrivals</div>
+                <div class="text-2xl font-black text-emerald-400 mt-1" id="kpi-ontime">{{ kpis.today_on_time }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Late Arrivals</div>
+                <div class="text-2xl font-black text-amber-400 mt-1" id="kpi-late">{{ kpis.today_late }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg border border-amber-500/20">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Compliance Rate</div>
+                <div class="text-2xl font-black text-cyan-400 mt-1" id="kpi-rate">{{ kpis.today_rate }}%</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-lg border border-cyan-500/20">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace: Camera Feed & Real-Time Log Split -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Live Camera Stream (7 Cols) -->
+        <div class="lg:col-span-7 bg-slate-900/80 border border-white/10 rounded-3xl p-5 shadow-2xl backdrop-blur-xl relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+                <div class="flex items-center space-x-2.5">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Continuous Stream HUD</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- Anti-Spoof Toggle -->
+                    <button onclick="toggleLiveness()" id="liveness-toggle-btn" title="Toggle Anti-Spoofing Liveness"
+                        class="px-2.5 py-1 rounded-lg text-[11px] font-mono border flex items-center space-x-1.5 transition-all
+                        {% if liveness_enabled %}bg-emerald-500/10 text-emerald-400 border-emerald-500/30{% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span id="liveness-text">Anti-Spoof: {% if liveness_enabled %}ON{% else %}OFF{% endif %}</span>
+                    </button>
+
+                    <!-- Mirror Video Toggle -->
+                    <button onclick="toggleVideoMirror()" id="mirror-btn" title="Toggle Mirror View (Horizontal Flip)"
+                        class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-mono text-slate-300 hover:text-white border border-slate-700 flex items-center space-x-1">
+                        <i class="fa-solid fa-right-left"></i>
+                        <span>Mirror</span>
+                    </button>
+
+                    <button onclick="toggleCameraFullscreen()" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-mono text-slate-300 hover:text-white border border-slate-700" title="Fullscreen">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Frame Container -->
+            <div id="video-container" class="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-[4/3] flex items-center justify-center shadow-inner group">
+                <img id="kiosk-feed" src="{{ url_for('video_feed') }}" alt="Live Camera Feed"
+                     class="w-full h-full object-cover select-none transition-transform"
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-center p-8\'><i class=\'fa-solid fa-video-slash text-4xl text-rose-500 mb-2\'></i><p class=\'text-slate-400 text-sm\'>Camera feed unavailable. Check webcam connection or settings.</p></div>';">
+            </div>
+
+            <!-- Status Guidance Bar -->
+            <div class="mt-4 p-3 bg-slate-950/70 border border-white/5 rounded-xl flex items-center justify-between text-xs text-slate-400">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-eye text-cyan-400 animate-pulse"></i>
+                    <span>Look into camera &amp; blink naturally to verify live human face. Photos &amp; mobile screens strictly rejected.</span>
+                </div>
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>Eye Action Active</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Real-Time Recognition Log (5 Cols) -->
+        <div class="lg:col-span-5 bg-slate-900/80 border border-white/10 rounded-3xl p-5 shadow-2xl backdrop-blur-xl flex flex-col h-[525px]">
+            <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">Live Detection Feed</h3>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-800/60">
+                        <span id="event-count">0</span> Logged
+                    </span>
+                </div>
+            </div>
+
+            <!-- Instant Search Input inside Feed -->
+            <div class="mb-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="live-search-input" onkeyup="filterLiveFeed()" placeholder="Search recognized student..."
+                        class="w-full pl-8 pr-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Scrollable Log Container -->
+            <div id="live-events-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1 select-none">
+                <div id="no-events-placeholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                    <i class="fa-solid fa-radar text-3xl mb-2 text-slate-600 animate-pulse"></i>
+                    <p class="text-xs font-medium">Awaiting facial recognition events...</p>
+                    <p class="text-[10px] text-slate-600 mt-1">Students will appear here sequentially in real time.</p>
+                </div>
+            </div>
+
+            <!-- Footer with Export Quick Action -->
+            <div class="pt-3 border-t border-white/10 mt-3 flex items-center justify-between text-xs">
+                <span class="text-slate-500 text-[11px] font-mono">SQLite Real-Time Sync</span>
+                <a href="{{ url_for('attendance_records_page') }}" class="text-cyan-400 hover:text-cyan-300 font-bold text-[11px] flex items-center space-x-1">
+                    <span>Full Logs & Reports</span>
+                    <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Attendance Modal -->
+<div id="manual-mark-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
+        <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                    <i class="fa-solid fa-user-pen"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Manual Attendance Override</h3>
+            </div>
+            <button onclick="closeManualMarkModal()" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('api_manual_mark') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Select Student</label>
+                <select name="student_id" required class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="" disabled selected>Choose student...</option>
+                    {% for st in students %}
+                        <option value="{{ st.id }}">{{ st.roll_number }} - {{ st.name }} ({{ st.department }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Course / Subject</label>
+                <select name="subject_id" required class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    {% for sub in subjects %}
+                        <option value="{{ sub.id }}" {% if sub.id == active_subject_id %}selected{% endif %}>{{ sub.code }} - {{ sub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Status</label>
+                    <select name="status" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option value="Present">Present</option>
+                        <option value="Late">Late</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Session Designation</label>
+                    <input type="text" name="session_type" value="Manual Override" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="pt-3 flex space-x-3">
+                <button type="button" onclick="closeManualMarkModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all">
+                    Commit Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let seenEventIds = new Set();
+let isMirrored = false;
+
+function toggleVideoMirror() {
+    isMirrored = !isMirrored;
+    const feed = document.getElementById('kiosk-feed');
+    const btn = document.getElementById('mirror-btn');
+    if (isMirrored) {
+        feed.classList.add('video-mirrored');
+        btn.classList.add('bg-indigo-600', 'text-white');
+    } else {
+        feed.classList.remove('video-mirrored');
+        btn.classList.remove('bg-indigo-600', 'text-white');
+    }
+}
+
+function toggleLiveness() {
+    fetch("{{ url_for('api_toggle_liveness') }}", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            const btn = document.getElementById('liveness-toggle-btn');
+            const txt = document.getElementById('liveness-text');
+            if (data.liveness_enabled) {
+                btn.className = "px-2.5 py-1 rounded-lg text-[11px] font-mono border flex items-center space-x-1.5 transition-all bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                txt.innerText = "Anti-Spoof: ON";
+                playChime('present');
+            } else {
+                btn.className = "px-2.5 py-1 rounded-lg text-[11px] font-mono border flex items-center space-x-1.5 transition-all bg-slate-800 text-slate-400 border-slate-700";
+                txt.innerText = "Anti-Spoof: OFF";
+                playChime('cooldown');
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+function updateKioskSession() {
+    const subId = document.getElementById('kiosk-subject').value;
+    const sessType = document.getElementById('kiosk-session').value;
+
+    fetch("{{ url_for('api_set_session') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject_id: subId, session_type: sessType })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            playChime('cooldown');
+            alert("Kiosk session updated successfully!");
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function openManualMarkModal() {
+    document.getElementById('manual-mark-modal').classList.remove('hidden');
+}
+
+function closeManualMarkModal() {
+    document.getElementById('manual-mark-modal').classList.add('hidden');
+}
+
+function toggleCameraFullscreen() {
+    const elem = document.getElementById('video-container');
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => alert(`Fullscreen error: ${err.message}`));
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+function filterLiveFeed() {
+    const filter = document.getElementById('live-search-input').value.toLowerCase();
+    const items = document.querySelectorAll('#live-events-container .live-feed-item');
+    items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(filter) ? 'flex' : 'none';
+    });
+}
+
+// Poll live events every 1.5 seconds
+function pollLiveEvents() {
+    fetch("{{ url_for('api_live_events') }}")
+        .then(res => res.json())
+        .then(events => {
+            const container = document.getElementById('live-events-container');
+            const placeholder = document.getElementById('no-events-placeholder');
+            const countEl = document.getElementById('event-count');
+
+            if (events && events.length > 0) {
+                if (placeholder) placeholder.style.display = 'none';
+                countEl.innerText = events.length;
+
+                events.forEach(ev => {
+                    if (!seenEventIds.has(ev.id)) {
+                        seenEventIds.add(ev.id);
+                        
+                        // Play appropriate audio chime based on status
+                        if (ev.status === 'Present') {
+                            playChime('present');
+                        } else {
+                            playChime('late');
+                        }
+
+                        const card = document.createElement('div');
+                        card.className = "live-feed-item p-3.5 rounded-2xl bg-slate-950/70 border border-white/10 flex items-center justify-between animate-fade-in hover:border-indigo-500/40 transition-all";
+                        
+                        const isPresent = ev.status === 'Present';
+                        const statusBadge = isPresent 
+                            ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Present</span>`
+                            : `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Late</span>`;
+
+                        const avatarHtml = ev.photo 
+                            ? `<img src="${ev.photo}" alt="${ev.name}" class="w-9 h-9 rounded-xl object-cover ring-1 ring-cyan-400/50 shadow-md shrink-0" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs uppercase\\'>${ev.name ? ev.name[0] : 'S'}</div>';">`
+                            : `<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs uppercase shadow-md shadow-indigo-600/30 shrink-0">${ev.name ? ev.name[0] : 'S'}</div>`;
+
+                        card.innerHTML = `
+                            <div class="flex items-center space-x-3">
+                                ${avatarHtml}
+                                <div class="text-left">
+                                    <div class="font-bold text-white text-xs">${ev.name}</div>
+                                    <div class="text-[10px] font-mono text-slate-400">${ev.roll_number} • ${ev.department || 'CSE'}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="mb-1">${statusBadge}</div>
+                                <div class="text-[10px] font-mono text-cyan-300 font-bold">${ev.time} (${ev.confidence}%)</div>
+                            </div>
+                        `;
+
+                        container.prepend(card);
+                    }
+                });
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+setInterval(pollLiveEvents, 1500);
+pollLiveEvents();
+</script>
+{% endblock %}

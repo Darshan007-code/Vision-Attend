@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Student Biometric Registry - VisionAttend AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-xl">
+        <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 text-lg shadow-inner">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black text-white tracking-tight">Student Biometric Registry</h1>
+                <p class="text-slate-400 text-xs mt-0.5">Biometric facial dataset repositories & student enrollment status.</p>
+            </div>
+        </div>
+
+        <button onclick="openRegisterModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Register New Student</span>
+        </button>
+    </div>
+
+    <!-- Student Table Card with Live Search Filter -->
+    <div class="bg-slate-900/80 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+        <div class="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                <span>Enrolled Students</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-400 border border-slate-700 font-mono font-bold" id="student-count-badge">{{ students|length }} Students</span>
+            </div>
+
+            <!-- Instant Search Bar -->
+            <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="student-search-input" onkeyup="filterStudentsTable()" placeholder="Search by name, roll, dept..."
+                    class="w-full pl-8 pr-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300" id="students-table">
+                <thead class="bg-slate-950/60 text-slate-400 uppercase font-extrabold text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                        <th class="py-3 px-4">#</th>
+                        <th class="py-3 px-4">Student Profile</th>
+                        <th class="py-3 px-4">Roll Number</th>
+                        <th class="py-3 px-4">Department & Sem</th>
+                        <th class="py-3 px-4 text-center">Face Samples</th>
+                        <th class="py-3 px-4 text-center">Biometric Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for st in students %}
+                    <tr class="student-row hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-slate-500">{{ loop.index }}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-xl overflow-hidden shadow-md shadow-indigo-600/30 border border-white/10 shrink-0">
+                                    <img src="{{ url_for('student_avatar', student_id=st.id) }}" alt="{{ st.name }}"
+                                         class="w-full h-full object-cover"
+                                         onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs uppercase\'>{{ st.name[0] }}</div>';">
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('student_profile', student_id=st.id) }}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                                        {{ st.name }}
+                                    </a>
+                                    <div class="text-[11px] text-slate-500">{{ st.email or 'No email' }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-cyan-300 font-bold">{{ st.roll_number }}</td>
+                        <td class="py-3.5 px-4 text-slate-300">
+                            <div>{{ st.department }}</div>
+                            <div class="text-[10px] text-slate-500">{{ st.semester }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono">
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold {% if st.face_samples_count >= 15 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %}">
+                                {{ st.face_samples_count }} crops
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if st.face_samples_count >= 15 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span> Ready
+                                </span>
+                            {% elif st.face_samples_count > 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span> Incomplete
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5"></span> No Samples
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ url_for('student_profile', student_id=st.id) }}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs transition-colors" title="View Profile & Smart ID">
+                                    <i class="fa-solid fa-id-card"></i>
+                                </a>
+                                {% if session.get('role') == 'admin' %}
+                                <form action="{{ url_for('delete_student_route', student_id=st.id) }}" method="POST" onsubmit="return confirm('Delete {{ st.name }} and their biometric dataset?');" class="inline">
+                                    <button type="submit" class="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-rose-400 text-xs transition-colors" title="Delete Student">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-500">
+                            <i class="fa-solid fa-users-slash text-3xl mb-2 text-slate-600 block"></i>
+                            <p class="text-xs">No students registered yet. Click "Register New Student" to begin.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Register Student Modal -->
+<div id="register-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-white/10 rounded-3xl max-w-lg w-full p-6 shadow-2xl animate-fade-in">
+        <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Enroll New Student</h3>
+            </div>
+            <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('register_student') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Roll Number / ID *</label>
+                    <input type="text" name="roll_number" required placeholder="e.g. 22CS02"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Full Legal Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. Maya Sharma"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Department *</label>
+                    <select name="department" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Information Technology">Information Technology</option>
+                        <option value="Electronics & Comm">Electronics & Comm</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Year / Semester *</label>
+                    <select name="semester" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option value="Semester 8">Semester 8</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Semester 6">Semester 6</option>
+                        <option value="Semester 5">Semester 5</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                    <input type="email" name="email" placeholder="student@visionattend.edu"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone Number</label>
+                    <input type="text" name="phone" placeholder="+1 555-0199"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-white/5 text-[11px] text-slate-400">
+                <i class="fa-solid fa-camera text-cyan-400 mr-1.5"></i>
+                After creating the record, you will be taken to the <b>Face Sample Studio</b> to capture 30 webcam crops with one click!
+            </div>
+
+            <div class="pt-3 flex space-x-3">
+                <button type="button" onclick="closeRegisterModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all">
+                    Register & Capture
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openRegisterModal() {
+    document.getElementById('register-modal').classList.remove('hidden');
+}
+function closeRegisterModal() {
+    document.getElementById('register-modal').classList.add('hidden');
+}
+
+function filterStudentsTable() {
+    const filter = document.getElementById('student-search-input').value.toLowerCase();
+    const rows = document.querySelectorAll('#students-table .student-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+# Python Bytecode and Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Generated Attendance Reports (reports/ folder preserved via .gitkeep)
+reports/*.xlsx
+reports/*.pdf
+reports/*.csv
+!reports/.gitkeep
+
+# System and Temp Logs
+*.log
+scratch/
+tmp/

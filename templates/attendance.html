@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Records - VisionAttend AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header & Filter Toolbar -->
+    <div class="bg-slate-900/80 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 text-lg shadow-inner">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-white tracking-tight">Institutional Attendance Logs</h1>
+                    <p class="text-slate-400 text-xs mt-0.5">Filter, audit, and export verified biometric records for official compliance.</p>
+                </div>
+            </div>
+
+            <!-- Export Buttons Group -->
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ url_for('export_csv', date=selected_date, subject_id=selected_subject, department=selected_dept) }}"
+                   class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition-all">
+                    <i class="fa-solid fa-file-csv text-emerald-400"></i>
+                    <span>Export CSV</span>
+                </a>
+
+                <a href="{{ url_for('export_excel', date=selected_date, subject_id=selected_subject, department=selected_dept) }}"
+                   class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition-all">
+                    <i class="fa-solid fa-file-excel text-emerald-400"></i>
+                    <span>Export Excel (.xlsx)</span>
+                </a>
+
+                <a href="{{ url_for('export_pdf', date=selected_date, subject_id=selected_subject, department=selected_dept) }}"
+                   class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 transition-all">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Printable PDF Sheet</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Form -->
+        <form method="GET" action="{{ url_for('attendance_records_page') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-white/10">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+                <input type="date" name="date" value="{{ selected_date }}"
+                       class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Course / Subject</label>
+                <select name="subject_id" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="">All Subjects</option>
+                    {% for sub in subjects %}
+                        <option value="{{ sub.id }}" {% if selected_subject|string == sub.id|string %}selected{% endif %}>{{ sub.code }} - {{ sub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Department</label>
+                <select name="department" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="">All Departments</option>
+                    <option value="Computer Science" {% if selected_dept == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                    <option value="Information Technology" {% if selected_dept == 'Information Technology' %}selected{% endif %}>Information Technology</option>
+                </select>
+            </div>
+
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-all flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-filter text-cyan-400"></i>
+                    <span>Apply Filter</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Records Table Container -->
+    <div class="bg-slate-900/80 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+        <div class="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                <span>Verified Attendance Entries</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-400 border border-slate-700 font-mono font-bold">{{ records|length }} Records</span>
+            </div>
+
+            <!-- Instant Search Input -->
+            <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="record-search-input" onkeyup="filterRecordsTable()" placeholder="Quick search records..."
+                    class="w-full pl-8 pr-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-medium">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300" id="records-table">
+                <thead class="bg-slate-950/60 text-slate-400 uppercase font-extrabold text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                        <th class="py-3 px-4">#</th>
+                        <th class="py-3 px-4">Student</th>
+                        <th class="py-3 px-4">Roll No</th>
+                        <th class="py-3 px-4">Department</th>
+                        <th class="py-3 px-4">Course / Subject</th>
+                        <th class="py-3 px-4">Date & Time</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4 text-center">Confidence</th>
+                        <th class="py-3 px-4">Method</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for r in records %}
+                    <tr class="record-row hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-slate-500">{{ loop.index }}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-7 h-7 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                    <img src="{{ url_for('student_avatar', student_id=r.student_id) }}" alt="{{ r.student_name }}"
+                                         class="w-full h-full object-cover"
+                                         onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-[10px]\'>{{ r.student_name[0] }}</div>';">
+                                </div>
+                                <a href="{{ url_for('student_profile', student_id=r.student_id) }}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                                    {{ r.student_name }}
+                                </a>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-cyan-300 font-bold">{{ r.roll_number }}</td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ r.student_dept }} ({{ r.semester }})</td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-bold text-slate-200">{{ r.subject_code }}</span>
+                            <span class="text-slate-400 text-[11px] block">{{ r.subject_name }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-slate-400">
+                            <div>{{ r.date }}</div>
+                            <div class="text-[10px] text-slate-500">{{ r.time }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if r.status == 'Present' %}
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Present</span>
+                            {% elif r.status == 'Late' %}
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Late</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Absent</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono">
+                            <span class="text-cyan-300 font-bold">{{ r.confidence }}%</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center text-[11px] text-slate-400">
+                                {% if r.method == 'Face Recognition' %}
+                                    <i class="fa-solid fa-camera text-indigo-400 mr-1.5 text-[10px]"></i> Biometric AI
+                                {% else %}
+                                    <i class="fa-solid fa-user-pen text-amber-400 mr-1.5 text-[10px]"></i> Manual
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="py-12 text-center text-slate-500">
+                            <i class="fa-solid fa-inbox text-3xl mb-2 text-slate-600 block"></i>
+                            <p class="text-xs">No attendance records match the selected filter criteria.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterRecordsTable() {
+    const filter = document.getElementById('record-search-input').value.toLowerCase();
+    const rows = document.querySelectorAll('#records-table .record-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

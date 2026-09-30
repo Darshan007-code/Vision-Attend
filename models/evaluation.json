@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "total_faces": 30,
+  "total_students": 1,
+  "training_time_sec": 0.25,
+  "metrics": {
+    "accuracy": 100.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "confusion_matrix": [],
+    "classes": [
+      "2"
+    ]
+  },
+  "timestamp": "2026-09-30 18:21:36"
+}

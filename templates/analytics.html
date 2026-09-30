@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Compliance Insights - VisionAttend AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-slate-900/80 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-xl flex items-center justify-between">
+        <div class="flex items-center space-x-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 text-lg shadow-inner">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black text-white tracking-tight">Institutional Attendance Analytics</h1>
+                <p class="text-slate-400 text-xs mt-0.5">Cross-sectional trends, department comparisons, and automated compliance threshold monitoring.</p>
+            </div>
+        </div>
+        <span class="text-[10px] font-mono uppercase bg-slate-800 text-cyan-300 px-3 py-1 rounded-full border border-slate-700 font-bold">
+            Live AI Telemetry
+        </span>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Enrolled</div>
+                <div class="text-2xl font-black text-white mt-1">{{ kpis.total_students }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg border border-indigo-500/20">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Subjects</div>
+                <div class="text-2xl font-black text-cyan-400 mt-1">{{ kpis.total_subjects }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-lg border border-cyan-500/20">
+                <i class="fa-solid fa-book-bookmark"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Today's Turnout</div>
+                <div class="text-2xl font-black text-emerald-400 mt-1">{{ kpis.today_rate }}%</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-900/70 border border-white/10 flex items-center justify-between glow-card backdrop-blur-xl">
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Defaulters (&lt;75%)</div>
+                <div class="text-2xl font-black text-rose-400 mt-1">{{ defaulters|length }}</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg border border-rose-500/20">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 7-Day Trend Line Chart (2 Cols) -->
+        <div class="lg:col-span-2 bg-slate-900/80 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-area text-cyan-400"></i>
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">7-Day Attendance Trajectory</h3>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">Daily Verified Attendees</span>
+            </div>
+            <div class="h-64">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- On-Time vs Late Arrivals Doughnut (1 Col) -->
+        <div class="bg-slate-900/80 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">Punctuality Ratio</h3>
+                </div>
+            </div>
+            <div class="h-56 relative flex items-center justify-center">
+                <canvas id="ratioChart"></canvas>
+            </div>
+            <div class="flex items-center justify-around pt-3 border-t border-white/10 text-xs font-mono">
+                <div class="text-emerald-400 font-bold">On-Time: {{ kpis.today_on_time }}</div>
+                <div class="text-amber-400 font-bold">Late: {{ kpis.today_late }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Defaulters List (<75% university threshold) -->
+    <div class="bg-slate-900/80 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs border border-rose-500/30">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">Attendance Defaulters List</h3>
+                    <p class="text-[11px] text-slate-400">Students falling below mandatory 75% attendance criteria (University Ordinance)</p>
+                </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                {{ defaulters|length }} At Risk
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/60 text-slate-400 uppercase font-extrabold text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                        <th class="py-3 px-4">#</th>
+                        <th class="py-3 px-4">Roll Number</th>
+                        <th class="py-3 px-4">Student Name</th>
+                        <th class="py-3 px-4">Department & Sem</th>
+                        <th class="py-3 px-4 text-center">Sessions Attended</th>
+                        <th class="py-3 px-4 text-center">Current Rate</th>
+                        <th class="py-3 px-4 text-center">Threshold Shortfall</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for d in defaulters %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-slate-500">{{ loop.index }}</td>
+                        <td class="py-3.5 px-4 font-mono text-cyan-300 font-bold">{{ d.roll_number }}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-7 h-7 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                    <img src="{{ url_for('student_avatar', student_id=d.student_id) }}" alt="{{ d.name }}"
+                                         class="w-full h-full object-cover"
+                                         onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-[10px]\'>{{ d.name[0] }}</div>';">
+                                </div>
+                                <span class="font-bold text-slate-200">{{ d.name }}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ d.department }} ({{ d.semester }})</td>
+                        <td class="py-3.5 px-4 text-center font-mono">{{ d.attended }} / {{ d.total_sessions }}</td>
+                        <td class="py-3.5 px-4 text-center font-mono">
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                {{ d.percentage }}%
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono text-rose-300 font-bold">
+                            -{{ d.shortfall }}%
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{{ url_for('student_profile', student_id=d.student_id) }}" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-bold transition-all">
+                                View Profile
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500">
+                            <i class="fa-solid fa-award text-3xl mb-2 text-emerald-400 block"></i>
+                            <p class="text-xs font-medium">Exemplary attendance! All enrolled students currently satisfy the 75% attendance threshold.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// 1. Trend Chart with Glowing Cyan/Indigo Line
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ trend.labels|tojson }},
+        datasets: [{
+            label: 'Attended Students',
+            data: {{ trend.data|tojson }},
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.12)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 3,
+            pointBackgroundColor: '#22d3ee',
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { family: '"JetBrains Mono"', size: 10 } } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', stepSize: 1, font: { family: '"JetBrains Mono"', size: 10 } }, beginAtZero: true }
+        }
+    }
+});
+
+// 2. Ratio Doughnut Chart
+const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+new Chart(ratioCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['On-Time', 'Late'],
+        datasets: [{
+            data: [{{ kpis.today_on_time or 1 }}, {{ kpis.today_late or 0 }}],
+            backgroundColor: ['#10b981', '#f59e0b'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11, family: '"Plus Jakarta Sans"' } } }
+        }
+    }
+});
+</script>
+{% endblock %}
