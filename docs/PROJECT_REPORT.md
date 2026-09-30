@@ -1,5 +1,5 @@
 # VisionAttend: Automated Face Recognition Attendance Tracking System
-## Final Year Engineering Project Report & System Architecture Specification
+## Enterprise System Architecture & Technical Specification
 
 ---
 

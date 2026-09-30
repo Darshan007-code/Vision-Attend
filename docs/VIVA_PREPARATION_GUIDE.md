@@ -1,5 +1,5 @@
-# VisionAttend: Final Year Project Viva Voce Preparation Guide
-## 50+ In-Depth Questions, Model Answers, & Examination Defense Strategies
+# VisionAttend: Technical Architecture & System Design Guide
+## 50+ In-Depth Questions, Engineering Solutions, & Technical Interview FAQ
 
 ---
 
@@ -137,7 +137,7 @@
 > 3. **PDF Attendance Sheet**: Formal institutional attendance sheet generated using `reportlab`, complete with university header, date, course metadata, student tabular roster, and signature lines for Faculty In-Charge and Head of Department.
 
 #### **Q23. What is the purpose of the standalone `run_gui.py`?**
-> **Answer**: In certain academic vivas, evaluators prefer testing the native OpenCV window directly without a web browser. `run_gui.py` runs the identical biometric engine in a standalone OpenCV GUI window with keyboard shortcuts (`S` to switch subject, `E` to enroll, `T` to train, `L` to toggle liveness), writing directly to the shared database.
+> **Answer**: In high-performance edge setups or offline physical kiosks, operators can run the native OpenCV window directly without a web browser. `run_gui.py` runs the identical biometric engine in a standalone OpenCV GUI window with keyboard shortcuts (`S` to switch subject, `E` to enroll, `T` to train, `L` to toggle liveness), writing directly to the shared database.
 
 ---
 
@@ -148,5 +148,5 @@
 > - **False Acceptance Rate (FAR)**: The probability that the system incorrectly identifies an unauthorized or different person as an enrolled student (Security vulnerability). In our system, FAR is $< 0.8\%$.
 > - **False Rejection Rate (FRR)**: The probability that the system fails to recognize an enrolled, legitimate student (Inconvenience factor). In our system, FRR is $< 1.6\%$.
 
-#### **Q25. How do you evaluate the model's accuracy academically?**
+#### **Q25. How do you evaluate the model's recognition accuracy and robustness?**
 > **Answer**: During training, the dataset is stratified and split into **80% training data** and **20% test data**. The classifier is trained on the 80% split and tested against the 20% unseen test split. We compute **Accuracy Score**, **Precision**, **Recall**, and **F1-Score**, and generate a **Confusion Matrix** saved in `models/evaluation.json` and viewable in the Admin Training Center.

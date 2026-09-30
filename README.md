@@ -1,32 +1,55 @@
-# 🎯 VisionAttend AI
-### Automated Face Recognition Attendance Tracking System
-*Final Year Engineering Project (B.E. / B.Tech / M.C.A. / B.C.A.) - Jan 2026*
+# 🎯 VisionAttend AI (Enterprise Edition)
+### Contactless Biometric Facial Attendance & Liveness Verification System
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Darshan007-code/Vision-Attend)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.10-red.svg)](https://opencv.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-lightgrey.svg)](https://flask.palletsprojects.com/)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
+
+---
+
+## 🌐 1-Click Instant Cloud Demo on GitHub
+
+You can launch and test **VisionAttend AI** live directly inside **GitHub** with zero local installations:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Darshan007-code/Vision-Attend)
+
+> **How it works**:
+> 1. Click **[Open in GitHub Codespaces](https://codespaces.new/Darshan007-code/Vision-Attend)** above (or press `,` on this repository).
+> 2. GitHub automatically creates a dedicated cloud container, installs all system and Python dependencies, and launches the server.
+> 3. GitHub forwards port `5000` and displays a notification to open the live web app in your browser!
 
 ---
 
 ## 📌 Executive Summary
-**VisionAttend** is a production-ready, contactless biometric attendance management system built with Python, OpenCV, and Flask. It uses high-speed face detection (Haar Cascades with CLAHE illumination normalization) and Local Binary Patterns Histograms (LBPH) to automate attendance tracking in university lecture halls and laboratories in real time.
+
+**VisionAttend AI** is a production-grade, contactless biometric attendance management system engineered with Python, OpenCV, and Flask. It pairs high-speed face detection (Haar Cascades with Contrast Limited Adaptive Histogram Equalization - CLAHE) and Local Binary Patterns Histograms (LBPH) to automate attendance tracking in corporate environments, lecture halls, and facilities in real time.
+
+The system incorporates **multimodal biological liveness detection** (Laplacian focus variance, Haar cascade ocular feature tracking, and YCrCb chrominance consistency) to actively block presentation attacks from printed photos and digital mobile displays.
 
 ---
 
 ## ✨ Key System Features
 
-- 🎥 **Real-Time Live Video Kiosk (30+ FPS)**: Low-latency MJPEG webcam streaming with dynamic bounding-box HUDs, student names, roll numbers, status badges, and confidence metrics.
-- 🛡️ **Multimodal Anti-Spoofing & Liveness Detection**: Combines Laplacian focus variance analysis, ocular feature validation, and YCrCb skin chrominance clustering to reject printed photos and smartphone displays.
+- 🎥 **Real-Time Live Video Kiosk (30+ FPS)**: Low-latency MJPEG video streaming with dynamic bounding-box HUDs, individual names, identification codes, status badges, and confidence metrics.
+- 🌐 **Client-Side Browser Webcam Streaming**: Direct WebRTC/HTML5 canvas frame processing (`/api/process_browser_frame`) enabling users on any device, phone, or laptop to test live face recognition directly through their browser—even on cloud servers without physical webcams.
+- 🛡️ **Biological Anti-Spoofing & Liveness Verification**: Combines Laplacian focus variance, Haar cascade eye action validation, and YCrCb skin chrominance clustering to reject static photos and video replays.
 - ⏱️ **Punctuality & Duplicate Protection**:
-  - Classifies attendance automatically into **Present** (On-Time) vs **Late** based on official lecture start time and grace periods.
-  - In-memory cooldown locks prevent duplicate logs when students stand in front of the lens.
-- 👥 **Biometric Enrollment Studio**: Interactive webcam capture wizard captures 30 normalized facial crops per student with guided poses, progress bar, and CLAHE preprocessing.
+  - Automatically classifies attendance into **Present** (On-Time) vs **Late** based on configured schedule start times and grace periods.
+  - In-memory cooldown locks prevent duplicate attendance logs when individuals remain in front of the lens.
+- 👥 **Biometric Enrollment Studio**: Interactive webcam capture wizard captures 30 normalized facial crops per individual with guided poses, progress bar, and CLAHE preprocessing.
 - 🧠 **AI Model Training Center**: One-click retraining of the LBPH recognizer with automated 80/20 train-test cross-validation, computing **Accuracy Score %**, **Precision**, **Recall**, **F1-Score**, and **Confusion Matrix**.
 - 📊 **Multi-Format Institutional Reporting**:
-  - **CSV Export** for spreadsheets.
+  - **CSV Export** for analytics and spreadsheet pipelines.
   - **Styled Excel (.xlsx)** with auto-sized columns and status color coding via `openpyxl`.
-  - **Official Academic PDF Attendance Sheets** with university headers and faculty/HOD signature sections via `reportlab`.
-- 📈 **Executive Analytics & Defaulter Tracking**: Visual 7-day trend graphs (Chart.js) and automated identification of students violating the mandatory **75% University Attendance Threshold**.
-- 🔊 **Voice Audio Feedback**: Background text-to-speech engine (`pyttsx3`) speaks personalized vocal confirmations ("Welcome Alex, CSE. Attendance verified").
+  - **Official Attendance PDF Sheets** with institutional branding and authorization/sign-off sections via `reportlab`.
+- 📈 **Executive Analytics & Defaulter Tracking**: Visual 7-day trend graphs (Chart.js) and automated identification of attendees falling below the **75% Compliance Threshold**.
+- 🔊 **Voice Audio Feedback**: Background text-to-speech engine (`pyttsx3`) speaks personalized vocal confirmations ("Welcome Alex, Attendance verified").
 - 🖥️ **Dual Operational Modes**:
-  1. **Web Portal Mode**: Modern responsive web application (Tailwind CSS, dark mode).
-  2. **Standalone Native OpenCV Desktop Mode**: Direct OpenCV window mode (`run_gui.py`) for offline academic viva demonstrations.
+  1. **Web Portal Mode**: Responsive web application (Tailwind CSS, dark mode).
+  2. **Standalone Native OpenCV Desktop Mode**: Direct OpenCV window mode (`run_gui.py`) for dedicated hardware appliances.
 
 ---
 
@@ -35,7 +58,7 @@
 ```mermaid
 flowchart TD
     subgraph Data Acquisition
-        CAM["Live Optical Camera (Webcam / IP Cam)"] --> FRAME["Raw RGB Video Frame"]
+        CAM["Optical Camera Stream (Webcam / Browser / IP Cam)"] --> FRAME["Raw RGB Video Frame"]
     end
 
     subgraph Computer Vision Pipeline
@@ -51,7 +74,7 @@ flowchart TD
     subgraph Attendance Logic
         RECOG --> MATCH{"Distance < 75.0?"}
         MATCH -- No --> UNK["Flag Unregistered"]
-        MATCH -- Yes --> CD{"Cooldown Check<br/>(60m Window)"}
+        MATCH -- Yes --> CD{"Cooldown Check<br/>(Configured Window)"}
         
         CD -- Already Logged --> SKIP["Suppress Duplicate"]
         CD -- New Record --> STATUS{"Timestamp > Start + Grace?"}
@@ -71,38 +94,60 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start Guide (Windows)
+## 🚀 Quick Start Guide
 
-### 1. Launch Web Portal (Recommended)
-Double-click `run.bat` or run:
-```powershell
-cd E:\agy-cli\vision-attend
-python app.py
-```
-Open your browser at: **`http://localhost:5000`**
+### Option 1: 1-Click Cloud Run on GitHub Codespaces
+Click the badge below to run the full environment on GitHub's cloud runtime:
 
-### 2. Launch Standalone Native OpenCV Desktop Mode
-Double-click `run_desktop.bat` or run:
-```powershell
-cd E:\agy-cli\vision-attend
-python run_gui.py
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Darshan007-code/Vision-Attend)
+
+### Option 2: Local Setup (Windows / Linux / macOS)
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/Darshan007-code/Vision-Attend.git
+   cd Vision-Attend
+   ```
+
+2. **Create and Activate a Virtual Environment**:
+   ```bash
+   python -m venv venv
+   # Windows:
+   .\venv\Scripts\activate
+   # Linux / macOS:
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Launch the Web Application**:
+   ```bash
+   python app.py
+   ```
+   Open your browser at: **`http://localhost:5000`**
+
+### Option 3: Docker Deployment
+
+```bash
+docker build -t vision-attend .
+docker run -p 5000:7860 vision-attend
 ```
-**Desktop Controls**:
-- `[Q]` or `[ESC]`: Quit
-- `[S]`: Switch Active Course / Subject
-- `[E]`: Enroll New Student (Webcam capture wizard)
-- `[T]`: Retrain Recognition Classifier
-- `[L]`: Toggle Anti-Spoofing Liveness On/Off
+Access the application at **`http://localhost:5000`**.
 
 ---
 
-## 🔐 Default Credentials for Evaluators & Testing
+## 🔐 Role-Based Access Control
 
-| Role | Username / Login Key | Password | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin` | `admin123` | Full governance, curriculum, enrollment & training |
-| **Faculty / Teacher** | `T101` | `teacher123` | Start live attendance kiosk & export reports |
-| **Student** | Student Roll No (e.g. `22CS01`) | Roll Number | Personal attendance %, 75% compliance tracker |
+The platform provides multi-tier role-based authentication:
+
+| Role | Primary Functions | Access Scope |
+| :--- | :--- | :--- |
+| **Administrator** | Full governance, department setup, biometric enrollment & AI model training | System Configuration, User Management, AI Center, Analytics |
+| **Faculty / Manager** | Live attendance kiosk operations, manual overrides, and report exports | Kiosk Station, Attendance Records, CSV/Excel/PDF Exports |
+| **Attendee / Student** | Personal attendance tracking, subject-wise statistics, and compliance status | Personal Dashboard, Attendance History, Debarment Alerts |
 
 ---
 
@@ -114,65 +159,51 @@ vision-attend/
 ├── run_gui.py                  # Standalone Native OpenCV Desktop GUI Kiosk
 ├── config.py                   # Central hyperparameters & directory mappings
 ├── requirements.txt            # Python dependencies
-├── run.bat                     # Windows 1-click launcher for Web Portal
-├── run_desktop.bat             # Windows 1-click launcher for Desktop Kiosk
+├── Dockerfile                  # Production container configuration
+├── Procfile                    # Cloud platform process declaration
+├── .devcontainer/              # 1-Click GitHub Codespaces configuration
+│   └── devcontainer.json
 │
 ├── core/
-│   ├── database.py             # SQLite models, indices, auth & queries
+│   ├── database.py             # SQLite models, schema, auth & queries
 │   ├── face_engine.py          # OpenCV Haar + CLAHE + LBPH Recognizer & cross-validation
-│   ├── liveness_detector.py    # Laplacian focus variance, eye presence & skin chrominance
+│   ├── liveness_detector.py    # Laplacian variance, eye tracking & skin chrominance
 │   └── attendance_manager.py   # Cooldown protection, schedule rules, HUD rendering
 │
 ├── services/
 │   ├── export_service.py       # Excel (.xlsx), CSV, and ReportLab PDF generators
 │   ├── stats_service.py        # 7-day trends, ratio computations & defaulters list
-│   └── voice_service.py        # Multi-threaded pyttsx3 audio greetings
+│   └── voice_service.py        # Multi-threaded audio greetings
 │
 ├── templates/                  # Modern Tailwind CSS HTML5 templates
 │   ├── base.html               # Master layout with responsive sidebar & live clock
 │   ├── login.html              # Multi-role authentication portal
-│   ├── kiosk.html              # Real-time attendance kiosk with live feed & manual mark
+│   ├── kiosk.html              # Real-time attendance kiosk (Server + Browser Webcam)
 │   ├── attendance.html         # Filterable attendance logs & export triggers
 │   ├── students.html           # Student registry & enrollment modal
 │   ├── student_profile.html    # Biometric capture studio & compliance history
 │   ├── train.html              # AI model training center with accuracy metrics
 │   ├── analytics.html          # Visual charts & 75% defaulters list
-│   ├── student_portal.html     # Student individual dashboard & compliance warnings
+│   ├── student_portal.html     # Individual dashboard & compliance warnings
 │   ├── teachers.html           # Faculty onboarding catalog
 │   ├── subjects.html           # Course & curriculum management
 │   └── settings.html           # System hyperparameters & vision calibration
 │
 ├── static/
 │   ├── css/custom.css          # Sleek dark styling & animations
-│   └── js/main.js              # Client-side scripts & toast auto-dismiss
+│   └── js/main.js              # Client-side scripts & toast notifications
 │
-├── dataset/                    # Enrolled students face crops organized by ID
+├── dataset/                    # Enrolled biometric face crops organized by ID
 ├── models/                     # Serialized trainer.yml & evaluation.json
 ├── reports/                    # Generated PDF, Excel, and CSV export files
 │
 └── docs/
-    ├── PROJECT_REPORT.md       # Comprehensive academic final year report
-    └── VIVA_PREPARATION_GUIDE.md # 50+ Viva Voce questions & model examiner answers
+    ├── PROJECT_REPORT.md       # Technical architecture specification
+    └── VIVA_PREPARATION_GUIDE.md # Technical architecture & system design guide
 ```
 
 ---
 
-## 🎓 How to Present to University Evaluators
+## 📄 License
 
-1. **Start with the Problem & Motivation**: Explain the 10–15 minute instructional loss and proxy attendance issues in paper rosters and fingerprint bottleneck queues.
-2. **Showcase the Role-Based Portals**:
-   - Log in as **Admin** (`admin`/`admin123`) to show curriculum and faculty setup.
-   - Enroll a student: Go to **Student Registry** $\rightarrow$ **Register New Student** $\rightarrow$ Click **"Capture 30 Face Crops"** (watch the live webcam capture 30 sample crops in seconds!).
-   - Train the Model: Go to **AI Model Training** $\rightarrow$ Click **"Retrain Recognition Engine"** $\rightarrow$ Highlight the computed **Accuracy Score %** and **Confusion Matrix**.
-3. **Demonstrate the Live Attendance Kiosk**:
-   - Select Course $\rightarrow$ Look into the camera $\rightarrow$ Watch the green HUD appear, student name tagged with roll number and confidence %, and hear the vocal announcement: *"Welcome [Name], Attendance verified"*.
-   - Stand in front of the camera again to prove **Anti-Duplicate Cooldown Protection** (*"Already marked recently"*).
-4. **Demonstrate Anti-Spoofing**:
-   - Hold up a smartphone with a photo or turn down the texture to show the anti-spoofing rejection indicator.
-5. **Generate Institutional Reports**:
-   - Go to **Attendance Logs** $\rightarrow$ Click **Printable PDF Sheet** to open a formal university attendance report complete with signature spaces for Faculty and Head of Department!
-6. **Check Analytics & 75% Defaulter Warning**:
-   - Open **Analytics & Charts** $\rightarrow$ View 7-day attendance trend line chart and inspect students falling below the mandatory 75% threshold.
-   - Log in as that **Student** to show the red debarment warning alert.
-7. **Offline Viva Backup**:
-   - Run `run_desktop.bat` to demonstrate native OpenCV desktop mode if examiners request command-line/desktop execution!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
