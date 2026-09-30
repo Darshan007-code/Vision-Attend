@@ -157,6 +157,51 @@ def api_toggle_liveness():
     set_setting("liveness_enabled", new_val)
     return jsonify({"success": True, "liveness_enabled": new_val == "1"})
 
+@app.route("/api/process_browser_frame", methods=["POST"])
+@login_required(roles=["admin", "teacher"])
+def api_process_browser_frame():
+    """
+    Processes video frames sent directly from client-side browser webcam (HTML5 getUserMedia).
+    Enables live interactive face recognition & Haar eye-blink anti-spoofing in cloud deployments
+    where the server does not have direct hardware USB camera access.
+    """
+    import base64
+    import numpy as np
+
+    data = request.get_json() or {}
+    image_b64 = data.get("image")
+    if not image_b64:
+        return jsonify({"success": False, "error": "No image data provided"}), 400
+
+    try:
+        if "," in image_b64:
+            image_b64 = image_b64.split(",", 1)[1]
+
+        img_bytes = base64.b64decode(image_b64)
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+        if frame is None:
+            return jsonify({"success": False, "error": "Image decode failed"}), 400
+
+        # Execute full computer vision pipeline: detection, Haar eye action, liveness, recognition, HUD
+        annotated_frame, frame_events = attendance_manager.process_frame(frame)
+
+        # Encode back to JPEG
+        ret, buffer = cv2.imencode('.jpg', annotated_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        if not ret:
+            return jsonify({"success": False, "error": "Frame encode failed"}), 500
+
+        resp_b64 = base64.b64encode(buffer).decode('utf-8')
+        return jsonify({
+            "success": True,
+            "image": f"data:image/jpeg;base64,{resp_b64}",
+            "events": frame_events,
+            "fps": attendance_manager.current_fps
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/manual_mark", methods=["POST"])
 @login_required(roles=["admin", "teacher"])
 def api_manual_mark():

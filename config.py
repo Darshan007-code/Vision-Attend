@@ -55,6 +55,6 @@ EYE_CHECK_ENABLED = True
 VOICE_ENABLED = True
 
 # Web Server Settings
-WEB_HOST = "0.0.0.0"
-WEB_PORT = 5000
-SECRET_KEY = "visionattend-enterprise-secret-key-2026"
+WEB_HOST = os.environ.get("HOST", "0.0.0.0")
+WEB_PORT = int(os.environ.get("PORT", 5000))
+SECRET_KEY = os.environ.get("SECRET_KEY", "visionattend-enterprise-secret-key-2026")
