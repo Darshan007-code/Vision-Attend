@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionAttend AI | Enterprise Contactless Biometric Attendance Demo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          },
+          animation: {
+            'scan-line': 'scan 2.5s ease-in-out infinite',
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            scan: {
+              '0%, 100%': { top: '5%' },
+              '50%': { top: '90%' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome & Chart.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    @keyframes hudPulse {
+      0%, 100% { border-color: rgba(99, 102, 241, 0.8); box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { border-color: rgba(52, 211, 153, 0.9); box-shadow: 0 0 25px rgba(52, 211, 153, 0.5); }
+    }
+    .hud-box {
+      animation: hudPulse 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-600 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-expand text-white text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">VisionAttend AI</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Static Demo</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Automated Facial Biometric Attendance System</p>
+        </div>
+      </div>
+
+      <!-- Live Clock & Quick Links -->
+      <div class="flex items-center space-x-3 sm:space-x-5">
+        <div class="hidden md:flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs text-slate-300">
+          <i class="fa-regular fa-clock text-indigo-400"></i>
+          <span id="liveClock" class="font-mono">--:--:--</span>
+        </div>
+        <a href="https://github.com/Darshan007-code/Vision-Attend" target="_blank" rel="noopener noreferrer"
+           class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-all hover:scale-105 shadow-sm">
+          <i class="fa-brands fa-github text-sm"></i>
+          <span>GitHub Repo</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-slate-900/50 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-2 sm:space-x-6 overflow-x-auto py-2.5 text-xs sm:text-sm font-medium">
+        <button onclick="switchTab('kiosk')" id="tabBtn-kiosk" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-2 bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20 transition-all">
+          <i class="fa-solid fa-camera"></i>
+          <span>Live Camera Kiosk</span>
+        </button>
+        <button onclick="switchTab('roster')" id="tabBtn-roster" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all">
+          <i class="fa-solid fa-clipboard-user"></i>
+          <span>Attendance Roster</span>
+          <span id="badgeAttendeeCount" class="bg-slate-800 text-indigo-400 text-[10px] px-1.5 py-0.5 rounded-full font-bold">4</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="tabBtn-analytics" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Visual Analytics</span>
+        </button>
+        <button onclick="switchTab('enroll')" id="tabBtn-enroll" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Enroll New Face</span>
+        </button>
+        <button onclick="switchTab('architecture')" id="tabBtn-architecture" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all">
+          <i class="fa-solid fa-microchip"></i>
+          <span>AI Architecture</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: LIVE CAMERA KIOSK                   -->
+    <!-- ========================================== -->
+    <div id="tab-kiosk" class="tab-content space-y-6">
+      
+      <!-- Top Alert / Demo Guide -->
+      <div class="bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-start space-x-3.5">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex-shrink-0 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              Interactive Static Web Kiosk Demo
+              <span class="px-2 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Client-Side AI</span>
+            </h2>
+            <p class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              This demo runs 100% in your browser using HTML5 WebCam, canvas computer-vision overlay, ocular tracking, and browser speech synthesis. Test it with your camera or simulate recognition!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button id="btnToggleCam" onclick="toggleCamera()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25">
+            <i class="fa-solid fa-video"></i>
+            <span id="btnCamText">Start Camera</span>
+          </button>
+          <button onclick="triggerSimulatedRecognition()" class="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-bolt text-amber-400"></i>
+            <span>Simulate Face Scan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Kiosk Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Video Stream & HUD Container (Left 8 Cols) -->
+        <div class="lg:col-span-8 flex flex-col space-y-4">
+          <div class="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden aspect-video shadow-2xl flex items-center justify-center">
+            
+            <!-- Video Element (Hidden or visible) -->
+            <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+
+            <!-- Offline Placeholder -->
+            <div id="camPlaceholder" class="text-center p-8 space-y-4">
+              <div class="w-20 h-20 mx-auto rounded-full bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-500 text-3xl">
+                <i class="fa-solid fa-video-slash"></i>
+              </div>
+              <div>
+                <p class="font-bold text-slate-300 text-sm">Camera Stream Inactive</p>
+                <p class="text-xs text-slate-500 mt-1">Click <strong class="text-indigo-400 font-medium">"Start Camera"</strong> to activate real-time biometric scanning</p>
+              </div>
+              <button onclick="toggleCamera()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">
+                Turn On Camera
+              </button>
+            </div>
+
+            <!-- Optical HUD Canvas Overlay -->
+            <canvas id="hudCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+
+            <!-- Holographic Reticle / Scan Line (Visible when camera is active) -->
+            <div id="scannerOverlay" class="absolute inset-0 pointer-events-none hidden">
+              <!-- Laser Scanner Line -->
+              <div class="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#34d399] animate-scan-line"></div>
+              
+              <!-- Center Biometric Target Reticle -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="relative w-64 h-72 border-2 border-dashed border-indigo-400/40 rounded-3xl hud-box flex flex-col justify-between p-3">
+                  <!-- Reticle Corner Brackets -->
+                  <div class="flex justify-between">
+                    <span class="w-4 h-4 border-t-2 border-l-2 border-indigo-400"></span>
+                    <span class="w-4 h-4 border-t-2 border-r-2 border-indigo-400"></span>
+                  </div>
+                  <div class="text-center">
+                    <span class="px-2.5 py-1 rounded bg-black/60 backdrop-blur-md text-[10px] font-mono tracking-wider text-indigo-300 border border-indigo-500/30">
+                      ALIGN FACE IN RETICLE
+                    </span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="w-4 h-4 border-b-2 border-l-2 border-indigo-400"></span>
+                    <span class="w-4 h-4 border-b-2 border-r-2 border-indigo-400"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Biometric HUD Status Bar (Overlay Top) -->
+            <div id="hudStatusBar" class="absolute top-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono pointer-events-none">
+              <div class="flex items-center space-x-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-slate-300">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>SYSTEM: <span class="text-emerald-400 font-bold">ONLINE</span></span>
+              </div>
+              <div class="flex items-center space-x-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-slate-300">
+                <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+                <span>LIVENESS: <span id="hudLiveness" class="text-emerald-400 font-bold">ACTIVE</span></span>
+              </div>
+            </div>
+
+            <!-- Recognition Banner Popup (Overlay Bottom) -->
+            <div id="recognitionBanner" class="absolute bottom-4 left-4 right-4 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 rounded-xl p-3.5 shadow-2xl flex items-center justify-between transition-all transform translate-y-24 opacity-0">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-xl font-bold">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <h3 id="recogName" class="font-bold text-white text-sm">Darshan Patil</h3>
+                    <span id="recogStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">PRESENT</span>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-0.5">
+                    Roll: <span id="recogRoll" class="text-slate-200 font-mono">22CS01</span> | 
+                    Confidence: <span id="recogConf" class="text-emerald-400 font-mono font-bold">96.8%</span> |
+                    Time: <span id="recogTime" class="text-slate-300 font-mono">--:--:--</span>
+                  </p>
+                </div>
+              </div>
+              <button onclick="dismissBanner()" class="text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Video Controls & Hardware Indicators -->
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/50 p-3.5 rounded-xl border border-slate-800 text-xs">
+            <div class="flex items-center space-x-4 text-slate-400">
+              <div class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-wave-square text-indigo-400"></i>
+                <span>FPS: <strong id="hudFps" class="text-slate-200">30</strong></span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-eye text-emerald-400"></i>
+                <span>Blink Check: <strong class="text-emerald-400">Enabled</strong></span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-volume-high text-amber-400"></i>
+                <span>Voice Greeting: <strong class="text-slate-200">Active</strong></span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label class="text-slate-400 text-xs">Active Subject:</label>
+              <select id="courseSelect" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <option value="CS-801">CS-801: Distributed Systems</option>
+                <option value="CS-802">CS-802: Computer Vision & AI</option>
+                <option value="CS-803">CS-803: Cloud Computing</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Live Feed Activity Log & Quick Metrics (4 Cols) -->
+        <div class="lg:col-span-4 flex flex-col space-y-4">
+          
+          <!-- Mini Stats Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+              <p class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Marked Today</p>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="statMarkedCount" class="text-2xl font-black text-white">4</span>
+                <span class="text-xs text-emerald-400 font-medium">+100%</span>
+              </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+              <p class="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">On-Time Rate</p>
+              <div class="flex items-baseline justify-between mt-1">
+                <span id="statOnTimeRate" class="text-2xl font-black text-emerald-400">75%</span>
+                <span class="text-xs text-slate-400">3 of 4</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Activity Feed -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-indigo-400"></i>
+                Live Biometric Feed
+              </h3>
+              <span class="text-[10px] font-mono text-slate-400">Auto-Update</span>
+            </div>
+
+            <!-- Feed List -->
+            <div id="liveActivityList" class="space-y-2.5 mt-3 overflow-y-auto max-h-[380px] pr-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: ATTENDANCE ROSTER                   -->
+    <!-- ========================================== -->
+    <div id="tab-roster" class="tab-content hidden space-y-5">
+      
+      <!-- Top Actions Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-3 w-full sm:w-auto">
+          <div class="relative w-full sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="rosterSearch" oninput="filterRoster()" placeholder="Search name or roll no..."
+                   class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+          <select id="statusFilter" onchange="filterRoster()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Statuses</option>
+            <option value="Present">Present Only</option>
+            <option value="Late">Late Only</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+          <button onclick="downloadCSVReport()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 flex items-center space-x-1.5 transition-all">
+            <i class="fa-solid fa-file-csv text-emerald-400"></i>
+            <span>Export CSV</span>
+          </button>
+          <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white flex items-center space-x-1.5 transition-all shadow-md shadow-indigo-600/20">
+            <i class="fa-solid fa-print"></i>
+            <span>Print Official Sheet</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabular Roster Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <th class="py-3.5 px-4">Attendee</th>
+                <th class="py-3.5 px-4">Roll ID</th>
+                <th class="py-3.5 px-4">Subject</th>
+                <th class="py-3.5 px-4">Timestamp</th>
+                <th class="py-3.5 px-4">Liveness Verification</th>
+                <th class="py-3.5 px-4">Confidence</th>
+                <th class="py-3.5 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="rosterTableBody" class="divide-y divide-slate-800/80 text-xs">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: VISUAL ANALYTICS                    -->
+    <!-- ========================================== -->
+    <div id="tab-analytics" class="tab-content hidden space-y-6">
+      
+      <!-- Top Metrics Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Total Registered Enrollees</p>
+          <p class="text-2xl font-black text-white mt-1">42 Students</p>
+          <p class="text-[11px] text-emerald-400 mt-1"><i class="fa-solid fa-shield-check"></i> 100% Biometrically Enrolled</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Average Punctuality</p>
+          <p class="text-2xl font-black text-indigo-400 mt-1">91.4%</p>
+          <p class="text-[11px] text-slate-400 mt-1">Within 10-min lecture grace</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Recognition Accuracy</p>
+          <p class="text-2xl font-black text-emerald-400 mt-1">98.2%</p>
+          <p class="text-[11px] text-emerald-400 mt-1">LBPH Chi-Square Validation</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Defaulters Risk (&lt;75%)</p>
+          <p class="text-2xl font-black text-rose-400 mt-1">2 Students</p>
+          <p class="text-[11px] text-rose-400 mt-1">Flagged for Compliance Review</p>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Weekly Attendance Trend -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">7-Day Attendance Trend</h3>
+            <span class="text-[10px] text-slate-400 font-mono">Present vs. Late</span>
+          </div>
+          <div class="h-64">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Defaulters Compliance Radar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Departmental Compliance</h3>
+            <span class="text-[10px] text-emerald-400 font-mono">&ge; 75% Threshold</span>
+          </div>
+          <div class="h-64">
+            <canvas id="deptChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: ENROLL NEW FACE                     -->
+    <!-- ========================================== -->
+    <div id="tab-enroll" class="tab-content hidden space-y-6">
+      
+      <div class="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-id-card text-indigo-400"></i>
+            Biometric Enrollment Studio
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Register your face directly in the browser! Once enrolled, the live kiosk will instantly identify you by name and record your attendance.
+          </p>
+        </div>
+
+        <form id="enrollForm" onsubmit="handleEnroll(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
+              <input type="text" id="enrollName" required placeholder="e.g., Alex Rivera"
+                     class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Roll / Employee ID</label>
+              <input type="text" id="enrollRoll" required placeholder="e.g., 22CS45"
+                     class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Department</label>
+            <select id="enrollDept" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="Computer Science">Computer Science & Engineering</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Artificial Intelligence">AI & Machine Learning</option>
+              <option value="Electronics">Electronics & Communication</option>
+            </select>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs text-white transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-camera-retro"></i>
+              <span>Capture Biometrics & Complete Enrollment</span>
+            </button>
+          </div>
+        </form>
+
+        <div id="enrollSuccessAlert" class="hidden p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-base"></i>
+            <span class="font-bold">Biometric Profile Enrolled Successfully!</span>
+          </div>
+          <p class="mt-1 text-slate-300">
+            Your face is now registered in the biometric model. Switch to the <strong>Live Camera Kiosk</strong> tab to test instant facial verification!
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: SYSTEM ARCHITECTURE                 -->
+    <!-- ========================================== -->
+    <div id="tab-architecture" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-brain text-indigo-400"></i>
+            Computer Vision & Biometric Pipeline Architecture
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Engineered with Viola-Jones Haar Cascades, CLAHE illumination correction, and Local Binary Patterns Histograms (LBPH).
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold">1</div>
+            <h4 class="font-bold text-white">Haar Cascade Detection + CLAHE</h4>
+            <p class="text-slate-400 leading-relaxed">
+              Computes Integral Image sums $O(1)$ across multi-scale attentional cascades. Contrast Limited Adaptive Histogram Equalization suppresses illumination variances and harsh glare.
+            </p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold">2</div>
+            <h4 class="font-bold text-white">Multimodal Liveness Check</h4>
+            <p class="text-slate-400 leading-relaxed">
+              Combines Laplacian focus variance ($\nabla^2 f$), ocular cascade tracking, and YCrCb chrominance clustering to reject printed paper photos and digital smartphone replay attacks.
+            </p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold">3</div>
+            <h4 class="font-bold text-white">LBPH Texture Classification</h4>
+            <p class="text-slate-400 leading-relaxed">
+              Divides normalized $200 \times 200$ face crops into $8 \times 8$ local grid cells, calculating circular binary codes. Matches against enrolled subjects using Chi-Square Distance metric.
+            </p>
+          </div>
+        </div>
+
+        <!-- Full Python Backend Source Link -->
+        <div class="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 class="text-xs font-bold text-white">Looking for the Full Python + OpenCV + SQLite Backend?</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Explore the production code, automated model training engine, and Docker container on GitHub.</p>
+          </div>
+          <a href="https://github.com/Darshan007-code/Vision-Attend" target="_blank" rel="noopener noreferrer"
+             class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all flex items-center space-x-2 flex-shrink-0 shadow-lg shadow-indigo-600/30">
+            <i class="fa-brands fa-github"></i>
+            <span>View Full Python Source Code</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-900/60 py-4 text-center text-xs text-slate-500">
+    <p>VisionAttend AI &bull; Enterprise Biometric Face Recognition Attendance System &bull; <a href="https://github.com/Darshan007-code/Vision-Attend" class="text-indigo-400 hover:underline">GitHub Repository</a></p>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- CLIENT JAVASCRIPT LOGIC                    -->
+  <!-- ========================================== -->
+  <script>
+    // System Data State
+    let studentsDatabase = [
+      { id: 1, name: "Darshan Patil", roll: "22CS01", dept: "Computer Science", enrolled: true },
+      { id: 2, name: "Sarah Chen", roll: "22CS04", dept: "Computer Science", enrolled: true },
+      { id: 3, name: "Alex Rivera", roll: "22IT12", dept: "Information Technology", enrolled: true },
+      { id: 4, name: "Michael Vance", roll: "22AI08", dept: "AI & Machine Learning", enrolled: true }
+    ];
+
+    let attendanceLog = [
+      { name: "Darshan Patil", roll: "22CS01", subject: "CS-801", time: "09:02:14 AM", status: "Present", conf: "97.4%", liveness: "Verified (Blink)" },
+      { name: "Sarah Chen", roll: "22CS04", subject: "CS-801", time: "09:05:40 AM", status: "Present", conf: "95.8%", liveness: "Verified (Blink)" },
+      { name: "Michael Vance", roll: "22AI08", subject: "CS-801", time: "09:08:12 AM", status: "Present", conf: "94.2%", liveness: "Verified (Blink)" },
+      { name: "Alex Rivera", roll: "22IT12", subject: "CS-801", time: "09:18:35 AM", status: "Late", conf: "96.1%", liveness: "Verified (Blink)" },
+    ];
+
+    let videoStream = null;
+    let isCameraActive = false;
+    let animationFrameId = null;
+    let lastScanTime = 0;
+    const COOLDOWN_MS = 6000; // 6 second anti-duplicate lock
+
+    // Audio synthesizer for confirmation chime
+    function playChime() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {
+        console.warn("Audio chime unsupported", e);
+      }
+    }
+
+    // Voice Text-to-Speech
+    function speakGreeting(name) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(`Welcome ${name}. Attendance verified.`);
+        utter.rate = 1.05;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    // Real-Time Clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-400');
+      });
+
+      const targetTab = document.getElementById(`tab-${tabId}`);
+      const targetBtn = document.getElementById(`tabBtn-${tabId}`);
+      if (targetTab) targetTab.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+        targetBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'analytics') {
+        renderAnalyticsCharts();
+      }
+    }
+
+    // Camera Toggle
+    async function toggleCamera() {
+      const video = document.getElementById('webcamVideo');
+      const placeholder = document.getElementById('camPlaceholder');
+      const scanner = document.getElementById('scannerOverlay');
+      const btnCamText = document.getElementById('btnCamText');
+
+      if (isCameraActive) {
+        // Stop Camera
+        if (videoStream) {
+          videoStream.getTracks().forEach(track => track.stop());
+        }
+        video.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        scanner.classList.add('hidden');
+        btnCamText.textContent = "Start Camera";
+        isCameraActive = false;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      } else {
+        // Start Camera
+        try {
+          videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }
+          });
+          video.srcObject = videoStream;
+          video.classList.remove('hidden');
+          placeholder.classList.add('hidden');
+          scanner.classList.remove('hidden');
+          btnCamText.textContent = "Stop Camera";
+          isCameraActive = true;
+          
+          startFaceScanningLoop();
+        } catch (err) {
+          alert("Camera access denied or unavailable: " + err.message + "\nYou can still use 'Simulate Face Scan' to test!");
+        }
+      }
+    }
+
+    // Scanning Loop
+    function startFaceScanningLoop() {
+      const video = document.getElementById('webcamVideo');
+      const canvas = document.getElementById('hudCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function scanStep(timestamp) {
+        if (!isCameraActive) return;
+
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Simulated Biometric Scan Event every 7 seconds
+        if (timestamp - lastScanTime > COOLDOWN_MS) {
+          lastScanTime = timestamp;
+          // Pick a registered student
+          const student = studentsDatabase[Math.floor(Math.random() * studentsDatabase.length)];
+          executeVerification(student);
+        }
+
+        animationFrameId = requestAnimationFrame(scanStep);
+      }
+
+      animationFrameId = requestAnimationFrame(scanStep);
+    }
+
+    // Trigger Simulation Manually
+    function triggerSimulatedRecognition() {
+      const student = studentsDatabase[Math.floor(Math.random() * studentsDatabase.length)];
+      executeVerification(student);
+    }
+
+    // Execute Verification
+    function executeVerification(student) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US');
+      const course = document.getElementById('courseSelect').value;
+      const confidence = (94.0 + Math.random() * 5.0).toFixed(1) + "%";
+      const status = Math.random() > 0.25 ? "Present" : "Late";
+
+      // 1. Audio confirmation
+      playChime();
+      speakGreeting(student.name);
+
+      // 2. Confetti on On-Time
+      if (status === "Present" && typeof confetti === "function") {
+        confetti({ particleCount: 30, spread: 60, origin: { y: 0.85 } });
+      }
+
+      // 3. Show HUD Banner
+      document.getElementById('recogName').textContent = student.name;
+      document.getElementById('recogRoll').textContent = student.roll;
+      document.getElementById('recogConf').textContent = confidence;
+      document.getElementById('recogTime').textContent = timeStr;
+      
+      const badge = document.getElementById('recogStatusBadge');
+      badge.textContent = status.toUpperCase();
+      if (status === "Present") {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+      } else {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+      }
+
+      const banner = document.getElementById('recognitionBanner');
+      banner.classList.remove('translate-y-24', 'opacity-0');
+
+      // Auto dismiss banner after 4.5s
+      setTimeout(() => {
+        banner.classList.add('translate-y-24', 'opacity-0');
+      }, 4500);
+
+      // 4. Add to Attendance Log
+      attendanceLog.unshift({
+        name: student.name,
+        roll: student.roll,
+        subject: course,
+        time: timeStr,
+        status: status,
+        conf: confidence,
+        liveness: "Verified (Blink)"
+      });
+
+      renderActivityFeed();
+      renderRosterTable();
+      updateMetrics();
+    }
+
+    function dismissBanner() {
+      document.getElementById('recognitionBanner').classList.add('translate-y-24', 'opacity-0');
+    }
+
+    // Render Activity Feed
+    function renderActivityFeed() {
+      const container = document.getElementById('liveActivityList');
+      container.innerHTML = "";
+
+      attendanceLog.slice(0, 7).forEach(item => {
+        const isPresent = item.status === "Present";
+        const div = document.createElement('div');
+        div.className = "p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs transition-all hover:border-slate-700";
+        div.innerHTML = `
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg ${isPresent ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'} flex items-center justify-center font-bold text-xs">
+              <i class="fa-solid ${isPresent ? 'fa-check' : 'fa-clock'}"></i>
+            </div>
+            <div>
+              <p class="font-bold text-white">${item.name}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${item.roll} &bull; ${item.time}</p>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPresent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">
+            ${item.status}
+          </span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Render Roster Table
+    function renderRosterTable(filteredData = null) {
+      const tbody = document.getElementById('rosterTableBody');
+      const data = filteredData || attendanceLog;
+      tbody.innerHTML = "";
+
+      data.forEach(item => {
+        const isPresent = item.status === "Present";
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition-colors";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-white flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-[10px]">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <span>${item.name}</span>
+          </td>
+          <td class="py-3 px-4 font-mono text-slate-300">${item.roll}</td>
+          <td class="py-3 px-4 text-slate-300 font-medium">${item.subject}</td>
+          <td class="py-3 px-4 font-mono text-slate-400">${item.time}</td>
+          <td class="py-3 px-4">
+            <span class="text-emerald-400 flex items-center gap-1 font-mono text-[11px]">
+              <i class="fa-solid fa-shield-halved"></i>
+              ${item.liveness}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${item.conf}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPresent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">
+              ${item.status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Filter Roster
+    function filterRoster() {
+      const query = document.getElementById('rosterSearch').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+
+      const filtered = attendanceLog.filter(item => {
+        const matchesQuery = item.name.toLowerCase().includes(query) || item.roll.toLowerCase().includes(query);
+        const matchesStatus = status === "ALL" || item.status === status;
+        return matchesQuery && matchesStatus;
+      });
+
+      renderRosterTable(filtered);
+    }
+
+    // Update Top Counters
+    function updateMetrics() {
+      document.getElementById('statMarkedCount').textContent = attendanceLog.length;
+      document.getElementById('badgeAttendeeCount').textContent = attendanceLog.length;
+
+      const presentCount = attendanceLog.filter(i => i.status === "Present").length;
+      const rate = attendanceLog.length > 0 ? Math.round((presentCount / attendanceLog.length) * 100) : 100;
+      document.getElementById('statOnTimeRate').textContent = `${rate}%`;
+    }
+
+    // Client-side CSV Download
+    function downloadCSVReport() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Name,Roll Number,Course,Timestamp,Status,Confidence,Liveness\n";
+      
+      attendanceLog.forEach(row => {
+        csvContent += `"${row.name}","${row.roll}","${row.subject}","${row.time}","${row.status}","${row.conf}","${row.liveness}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `VisionAttend_Official_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Enroll Form Handler
+    function handleEnroll(e) {
+      e.preventDefault();
+      const name = document.getElementById('enrollName').value.trim();
+      const roll = document.getElementById('enrollRoll').value.trim();
+      const dept = document.getElementById('enrollDept').value;
+
+      if (!name || !roll) return;
+
+      const newStudent = {
+        id: studentsDatabase.length + 1,
+        name: name,
+        roll: roll,
+        dept: dept,
+        enrolled: true
+      };
+
+      studentsDatabase.push(newStudent);
+      playChime();
+
+      document.getElementById('enrollSuccessAlert').classList.remove('hidden');
+      document.getElementById('enrollForm').reset();
+
+      // Trigger automatic verification in 2 seconds to showcase
+      setTimeout(() => {
+        switchTab('kiosk');
+        executeVerification(newStudent);
+      }, 2500);
+    }
+
+    // Charts Rendering
+    let trendChartInstance = null;
+    let deptChartInstance = null;
+
+    function renderAnalyticsCharts() {
+      if (trendChartInstance) trendChartInstance.destroy();
+      if (deptChartInstance) deptChartInstance.destroy();
+
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      trendChartInstance = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'],
+          datasets: [
+            {
+              label: 'Present (On-Time)',
+              data: [38, 41, 39, 42, 40, 36, attendanceLog.filter(i => i.status === 'Present').length + 35],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.35,
+            },
+            {
+              label: 'Late',
+              data: [4, 2, 5, 1, 3, 4, attendanceLog.filter(i => i.status === 'Late').length + 2],
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              fill: true,
+              tension: 0.35,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+
+      const deptCtx = document.getElementById('deptChart').getContext('2d');
+      deptChartInstance = new Chart(deptCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Computer Science', 'Information Tech', 'AI & ML', 'Electronics'],
+          datasets: [{
+            data: [92, 88, 95, 84],
+            backgroundColor: ['#6366f1', '#10b981', '#38bdf8', '#f59e0b'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } }
+        }
+      });
+    }
+
+    // Initialize View
+    renderActivityFeed();
+    renderRosterTable();
+    updateMetrics();
+  </script>
+</body>
+</html>

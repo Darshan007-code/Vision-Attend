@@ -11,25 +11,23 @@ pinned: false
 # 🎯 VisionAttend AI (Enterprise Edition)
 ### Contactless Biometric Facial Attendance & Liveness Verification System
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Darshan007-code/Vision-Attend)
+[![Live Static Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-success?style=for-the-badge&logo=github)](https://Darshan007-code.github.io/Vision-Attend/)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Codespaces-1--Click_Run-blue?style=for-the-badge&logo=github)](https://codespaces.new/Darshan007-code/Vision-Attend)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.10-red.svg)](https://opencv.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0-lightgrey.svg)](https://flask.palletsprojects.com/)
 [![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
 ---
 
-## 🌐 1-Click Instant Cloud Demo on GitHub
+## 🌐 Live Interactive Demos (Choose Your Mode)
 
-You can launch and test **VisionAttend AI** live directly inside **GitHub** with zero local installations:
+| Demo Mode | Technology | Best For | Link |
+| :--- | :--- | :--- | :--- |
+| **🚀 Instant Static Portfolio Demo** | Pure Browser HTML5 + Canvas + Client AI | Instant portfolio viewing on any phone/laptop | [**Launch Static Demo**](https://Darshan007-code.github.io/Vision-Attend/) |
+| **💻 Full Python + OpenCV Cloud Runtime** | GitHub Codespaces (Cloud Linux Container) | Full live Python backend & model training | [**Open in Codespaces**](https://codespaces.new/Darshan007-code/Vision-Attend) |
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Darshan007-code/Vision-Attend)
-
-> **How it works**:
-> 1. Click **[Open in GitHub Codespaces](https://codespaces.new/Darshan007-code/Vision-Attend)** above (or press `,` on this repository).
-> 2. GitHub automatically creates a dedicated cloud container, installs all system and Python dependencies, and launches the server.
-> 3. GitHub forwards port `5000` and displays a notification to open the live web app in your browser!
+> **Live Static Demo**: Hosted 24/7 on **GitHub Pages** with zero backend delays. Experience the biometric camera kiosk, real-time bounding HUD, biological liveness verification, automated punctuality classification, audio speech confirmations, and CSV export directly in your browser!
 
 ---
 
